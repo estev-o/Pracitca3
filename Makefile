@@ -11,7 +11,7 @@ compile:
 	bison -o $(FUENTE).tab.c $(FUENTE).y -yd
 	gcc -o $(FUENTE) lex.yy.c $(FUENTE).tab.c -$(LIB) -ly
 
-run: $(PRUEBA)
+run: compile $(PRUEBA)
 	./$(FUENTE) < $(PRUEBA) > $(TEX_OUT)
 
 clean:

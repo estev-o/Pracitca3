@@ -11,7 +11,7 @@ Javier   -     -
 # Lista de reglas sintácticas de md
 ## Básicas
 https://www.markdownguide.org/basic-syntax/
-1. Headings (+ alternate syntax)
+1. Headings (+ alternate syntax) [OK]
 2. Parágrafos
 3. Saltos de línea
 4. Bold
