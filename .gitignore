@@ -1,6 +1,6 @@
-.tex
-.tab.c
-.tab.h
-.yy.c
+*.tex
+*.tab.c
+*.tab.h
+*.yy.c
 
 practica3
