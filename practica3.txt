@@ -39,7 +39,7 @@ https://www.markdownguide.org/extended-syntax/
 # Pipeline 
     - Entrada de un texto .md
     - Traducción a un texto latex
-    - (Opcional, compilación de latex para que nos de un PDF)
+    - Para ver el .tex como pdf, en principio usaremos Overleaf, fuera del programa. Aunque estaría bien poder compilarlo
 
 # Planificación del trabajo
 1. Creación de archivos básicos (Makefile, practica3.l, practica3.txt, practica2.y, archivos de test (vacíos de momento))
