@@ -1,6 +1,6 @@
 # Práctica de Procesamiento del Lenguaje
 Estevo Aldea Arias
-Javier   -     -
+Javier Carballal Morgade
 
 # Traductor de md a Latex
 - Lenguajes usados-> C, Flex, Bison, gcc 
