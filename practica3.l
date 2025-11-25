@@ -12,32 +12,32 @@ static char *dup_trim(const char *s) {
     }
     return copy;
 }
+
+static char *clean_heading(const char *s) {
+    while (*s == ' ' || *s == '\t') s++;
+    while (*s == '#') s++;
+    while (*s == ' ' || *s == '\t') s++;
+    return dup_trim(s);
+}
 %}
 
 %option noinput nounput noyywrap
 
 %%
-^[ \t]*#{1,6}[ \t]+[^\n]*\r?\n? {
-    /* Count heading level */
-    int i = 0, level = 0;
-    while (yytext[i] == ' ' || yytext[i] == '\t') i++;
-    while (yytext[i] == '#') { level++; i++; }
-    while (yytext[i] == ' ' || yytext[i] == '\t') i++;
-    char *text = dup_trim(yytext + i);
-    yylval.str = text;
-    switch (level) {
-        case 1: return HEAD1;
-        case 2: return HEAD2;
-        case 3: return HEAD3;
-        case 4: return HEAD4;
-        case 5: return HEAD5;
-        case 6: return HEAD6;
-        default: free(text); break;
-    }
-}
+^[ \t]*#{1}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD1; }
+^[ \t]*#{2}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD2; }
+^[ \t]*#{3}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD3; }
+^[ \t]*#{4}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD4; }
+^[ \t]*#{5}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD5; }
+^[ \t]*#{6}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD6; }
 
 ^[ \t]*=+[ \t]*\r?\n    { return UNDER1; }
 ^[ \t]*-+[ \t]*\r?\n    { return UNDER2; }
+
+^.*[ ]{2}\r? {
+    yylval.str = dup_trim(yytext);
+    return TEXTLINE_HARD_BREAK;
+}
 
 ^[^\n]+ {
     yylval.str = dup_trim(yytext);

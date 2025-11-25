@@ -11,7 +11,7 @@ void yyerror(const char *s);
 }
 
 %token <str> HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
-%token <str> TEXTLINE
+%token <str> TEXTLINE TEXTLINE_HARD_BREAK
 %token UNDER1 UNDER2
 %token NEWLINE
 %start document
@@ -40,11 +40,14 @@ heading
     | HEAD5        { printf("\\subparagraph{%s}\n\n", $1); free($1); }
     | HEAD6        { printf("\\textbf{%s}\n\n", $1); free($1); }
     | TEXTLINE NEWLINE UNDER1 { printf("\\section{%s}\n\n", $1); free($1); }
+    | TEXTLINE_HARD_BREAK NEWLINE UNDER1 { printf("\\section{%s}\n\n", $1); free($1); }
     | TEXTLINE NEWLINE UNDER2 { printf("\\subsection{%s}\n\n", $1); free($1); }
+    | TEXTLINE_HARD_BREAK NEWLINE UNDER2 { printf("\\subsection{%s}\n\n", $1); free($1); }
     ;
 
 textline
     : TEXTLINE NEWLINE { printf("%s\n", $1); free($1); }
+    | TEXTLINE_HARD_BREAK NEWLINE { printf("%s \\\\\n", $1); free($1); }
     ;
 
 blank
