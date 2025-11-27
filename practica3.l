@@ -21,7 +21,7 @@ static char *clean_heading(const char *s) {
 }
 %}
 
-%option noinput nounput noyywrap
+%option noinput nounput noyywrap yylineno
 
 %%
 ^[ \t]*#{1}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD1; }
@@ -34,15 +34,15 @@ static char *clean_heading(const char *s) {
 ^[ \t]*=+[ \t]*\r?\n    { return UNDER1; }
 ^[ \t]*-+[ \t]*\r?\n    { return UNDER2; }
 
-^.*[ ]{2}\r? {
-    yylval.str = dup_trim(yytext);
-    return TEXTLINE_HARD_BREAK;
-}
+\*\*\* { return TRIPLE; }
+___ { return TRIPLE; }
+\*\* { return STRONG; }
+__ { return STRONG; }
+\* { return EMPH; }
+_ { return EMPH; }
 
-^[^\n]+ {
-    yylval.str = dup_trim(yytext);
-    return TEXTLINE;
-}
-
-\r?\n    { return NEWLINE; }
+[ ]{2}\r?\n { return HARD_BREAK; }
+\r?\n       { return NEWLINE; }
+[ \t]+      { yylval.str = strdup(yytext); return SPACE; }
+[^*_\n\r \t]+ { yylval.str = strdup(yytext); return WORD; }
 %%

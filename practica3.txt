@@ -14,9 +14,9 @@ https://www.markdownguide.org/basic-syntax/
 1. Headings (+ alternate syntax) [OK]
 2. Parágrafos [OK]
 3. Saltos de línea [OK]
-4. Bold
-5. Italic
-6. Bold and Italic
+4. Bold [OK]
+5. Italic [OK]
+6. Bold and Italic [OK]
 7. Blockquotes (+ múltiple parágrafos)
 8. Nested Blockquotes y con otros elementos
 9. Listas
