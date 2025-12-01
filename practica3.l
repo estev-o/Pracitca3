@@ -146,6 +146,19 @@ __ { return STRONG; }
 \* { return EMPH; }
 _ { return EMPH; }
 
+`[^`\n\r]*` {
+    size_t len = yyleng;
+    if (len >= 2) {
+        char *copy = malloc(len - 1);
+        if (copy) {
+            memcpy(copy, yytext + 1, len - 2);
+            copy[len - 2] = '\0';
+            yylval.str = copy;
+            return CODE;
+        }
+    }
+}
+
 [ ]{2}\r?\n { return HARD_BREAK; }
 \r?\n       { return NEWLINE; }
 [ \t]+      { yylval.str = strdup(yytext); return SPACE; }

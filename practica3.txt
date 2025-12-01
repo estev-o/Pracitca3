@@ -20,7 +20,7 @@ https://www.markdownguide.org/basic-syntax/
 7. Blockquotes (+ múltiple parágrafos) [OK]
 8. Nested Blockquotes y con otros elementos [SKIP?]
 9. Listas [OK]
-10. Código (línea+bloques)
+10. Código línea
 11. Líneas Horizontales
 12. Links
 13. Imágenes

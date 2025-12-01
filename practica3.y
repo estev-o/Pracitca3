@@ -56,6 +56,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token <str> WORD SPACE
 %token <str> BQLINE
 %token STRONG EMPH TRIPLE HARD_BREAK NEWLINE
+%token <str> CODE
 %token UNDER1 UNDER2
 %token LIST_END
 %token <list> UL_ITEM OL_ITEM
@@ -158,6 +159,7 @@ inline_content
 inline_element
     : WORD          { $$ = $1; }
     | SPACE         { $$ = $1; }
+    | CODE          { $$ = wrap("\\texttt{", $1, "}"); }
     | strong_text   { $$ = $1; }
     | emph_text     { $$ = $1; }
     | triple_text   { $$ = $1; }
