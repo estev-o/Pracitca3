@@ -1,8 +1,0 @@
-Limitaciones:
-
-Bold and italic:
-- Nested formatting of the same type (e.g., **bold **inner** bold**) is not supported to avoid ambiguity.
-- Mixing *** with other delimiters (e.g., *italic***) requires explicit spacing (e.g., *italic* **) because *** is tokenized as TRIPLE.
-
-General:
-- El input tiene que acabar con una nueva línea. No sé si eso es lo que debería ocurrir o no.
