@@ -45,13 +45,18 @@ static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
     item->text = dup_trim(text);
     return item;
 }
+
+static int fence_char = 0;
 %}
 
 %option noinput nounput noyywrap yylineno
-%x BQ LIST
+%x BQ LIST CFENCE
 
 %%
 <INITIAL>{
+^```[^\n]*\r?\n?  { fence_char = '`'; BEGIN(CFENCE); return CODE_FENCE_START; }
+^~~~[^\n]*\r?\n?  { fence_char = '~'; BEGIN(CFENCE); return CODE_FENCE_START; }
+
 ^[ \t]*[-+*][ \t]+[^\n]*\r?\n? {
     int depth = count_depth(yytext);
     const char *p = yytext;
@@ -132,6 +137,21 @@ static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
     if (YY_START == LIST) {
         BEGIN(INITIAL);
         return LIST_END;
+    }
+}
+}
+
+<CFENCE>{
+^```[ \t]*\r?\n?  { if (fence_char == '`') { BEGIN(INITIAL); return CODE_FENCE_END; } }
+^~~~[ \t]*\r?\n?  { if (fence_char == '~') { BEGIN(INITIAL); return CODE_FENCE_END; } }
+^[^\n]*\r?\n? {
+    yylval.str = strdup(yytext);
+    return CODE_TEXT;
+}
+<<EOF>> {
+    if (YY_START == CFENCE) {
+        BEGIN(INITIAL);
+        return CODE_FENCE_END;
     }
 }
 }

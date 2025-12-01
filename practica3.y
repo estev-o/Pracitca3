@@ -57,15 +57,17 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token <str> BQLINE
 %token STRONG EMPH TRIPLE HARD_BREAK NEWLINE
 %token <str> CODE
+%token <str> CODE_TEXT
 %token UNDER1 UNDER2
 %token LIST_END
+%token CODE_FENCE_START CODE_FENCE_END
 %token <list> UL_ITEM OL_ITEM
 %token BQBLANK BQEND
 
 %type <str> inline_content inline_element strong_text emph_text triple_text
 %type <str> strong_content strong_content_element emph_content emph_content_element triple_content triple_content_element
 %type <str> bq_content bq_piece bq_line bq_blank
-%type <str> list_block list_items list_item
+%type <str> list_block list_items list_item code_block code_lines
 
 %start document
 
@@ -84,6 +86,7 @@ element
     | paragraph
     | list_block
     | blockquote
+    | code_block
     | blank
     ;
 
@@ -149,6 +152,18 @@ list_items
 list_item
     : UL_ITEM { handle_list_item($1); $$ = NULL; }
     | OL_ITEM { handle_list_item($1); $$ = NULL; }
+    ;
+
+code_block
+    : CODE_FENCE_START code_lines CODE_FENCE_END {
+        printf("\\begin{verbatim}\n%s\\end{verbatim}\n\n", $2 ? $2 : "");
+        free($2);
+      }
+    ;
+
+code_lines
+    : CODE_TEXT               { $$ = $1; }
+    | code_lines CODE_TEXT    { $$ = join($1, $2); }
     ;
 
 inline_content
