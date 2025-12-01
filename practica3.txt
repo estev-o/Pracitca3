@@ -21,7 +21,7 @@ https://www.markdownguide.org/basic-syntax/
 8. Nested Blockquotes y con otros elementos [SKIP?]
 9. Listas [OK]
 10. Código línea y bloques [OK]
-11. Líneas Horizontales
+11. Líneas Horizontales [OK]
 12. Links
 13. Imágenes
 

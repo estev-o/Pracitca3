@@ -63,6 +63,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token CODE_FENCE_START CODE_FENCE_END
 %token <list> UL_ITEM OL_ITEM
 %token BQBLANK BQEND
+%token HR
 
 %type <str> inline_content inline_element strong_text emph_text triple_text
 %type <str> strong_content strong_content_element emph_content emph_content_element triple_content triple_content_element
@@ -87,6 +88,7 @@ element
     | list_block
     | blockquote
     | code_block
+    | horizontal_rule
     | blank
     ;
 
@@ -164,6 +166,12 @@ code_block
 code_lines
     : CODE_TEXT               { $$ = $1; }
     | code_lines CODE_TEXT    { $$ = join($1, $2); }
+    ;
+
+horizontal_rule
+    : HR               { printf("\\noindent\\rule{\\linewidth}{0.4pt}\n\n"); }
+    | UNDER1           { printf("\\noindent\\rule{\\linewidth}{0.4pt}\n\n"); }
+    | UNDER2           { printf("\\noindent\\rule{\\linewidth}{0.4pt}\n\n"); }
     ;
 
 inline_content

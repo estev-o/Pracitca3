@@ -54,6 +54,9 @@ static int fence_char = 0;
 
 %%
 <INITIAL>{
+^[ \t]*\*{3,}[ \t]*\r?\n? { return HR; }
+^[ \t]*_{3,}[ \t]*\r?\n? { return HR; }
+
 ^```[^\n]*\r?\n?  { fence_char = '`'; BEGIN(CFENCE); return CODE_FENCE_START; }
 ^~~~[^\n]*\r?\n?  { fence_char = '~'; BEGIN(CFENCE); return CODE_FENCE_START; }
 
