@@ -22,7 +22,7 @@ https://www.markdownguide.org/basic-syntax/
 9. Listas [OK]
 10. Código línea y bloques [OK]
 11. Líneas Horizontales [OK]
-12. Links
+12. Links [OK]
 13. Imágenes
 
 ## Extended syntax

@@ -47,6 +47,15 @@ static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
 }
 
 static int fence_char = 0;
+
+static link_t *mk_link(const char *text, const char *url, const char *title) {
+    link_t *l = malloc(sizeof(link_t));
+    if (!l) return NULL;
+    l->text = text ? strdup(text) : NULL;
+    l->url = url ? strdup(url) : NULL;
+    l->title = title ? strdup(title) : NULL;
+    return l;
+}
 %}
 
 %option noinput nounput noyywrap yylineno
@@ -185,5 +194,54 @@ _ { return EMPH; }
 [ ]{2}\r?\n { return HARD_BREAK; }
 \r?\n       { return NEWLINE; }
 [ \t]+      { yylval.str = strdup(yytext); return SPACE; }
+\[[^]]+\]\([^) \t\n\r]+[^)\n\r]*\) {
+    const char *p = yytext + 1;
+    const char *end_text = strchr(p, ']');
+    const char *url_start = strchr(end_text ? end_text : p, '(');
+    if (end_text && url_start) {
+        size_t text_len = end_text - p;
+        char *text = strndup(p, text_len);
+        url_start++;
+        while (*url_start == ' ' || *url_start == '\t') url_start++;
+        const char *url_end = strchr(url_start, ')');
+        char *inner = NULL;
+        if (url_end && url_end > url_start) inner = strndup(url_start, url_end - url_start);
+        char *url = NULL;
+        char *title = NULL;
+        if (inner) {
+            char *space = strchr(inner, ' ');
+            if (space) {
+                *space = '\0';
+                char *tstart = strchr(space + 1, '"');
+                if (tstart) {
+                    tstart++;
+                    char *tend = strchr(tstart, '"');
+                    if (tend) title = strndup(tstart, tend - tstart);
+                }
+            }
+            url = strdup(inner);
+        }
+        yylval.link = mk_link(text, url, title);
+        free(text);
+        free(url);
+        free(title);
+        free(inner);
+        return LINK;
+    }
+}
+[<]https?:[^>\n\r]+[>] {
+    size_t len = yyleng;
+    char *url = strndup(yytext + 1, len - 2);
+    yylval.link = mk_link(url, url, NULL);
+    free(url);
+    return LINK;
+}
+[<][^>\n\r@]+@[^>\n\r]+[>] {
+    size_t len = yyleng;
+    char *url = strndup(yytext + 1, len - 2);
+    yylval.link = mk_link(url, url, NULL);
+    free(url);
+    return LINK;
+}
 [^*_\n\r \t]+ { yylval.str = strdup(yytext); return WORD; }
 %%

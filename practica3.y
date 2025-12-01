@@ -6,6 +6,12 @@ typedef struct list_item {
     int ordered;
     char *text;
 } list_item_t;
+
+typedef struct link {
+    char *text;
+    char *url;
+    char *title;
+} link_t;
 #endif
 }
 
@@ -50,6 +56,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %union {
     char *str;
     list_item_t *list;
+    link_t *link;
 }
 
 %token <str> HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
@@ -64,6 +71,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token <list> UL_ITEM OL_ITEM
 %token BQBLANK BQEND
 %token HR
+%token <link> LINK
 
 %type <str> inline_content inline_element strong_text emph_text triple_text
 %type <str> strong_content strong_content_element emph_content emph_content_element triple_content triple_content_element
@@ -183,6 +191,20 @@ inline_element
     : WORD          { $$ = $1; }
     | SPACE         { $$ = $1; }
     | CODE          { $$ = wrap("\\texttt{", $1, "}"); }
+    | LINK          {
+            char *text = $1->text ? strdup($1->text) : ($1->url ? strdup($1->url) : strdup(""));
+            if ($1->url) {
+                char *href = wrap("\\href{", $1->url ? strdup($1->url) : strdup(""), "}{");
+                char *body = join(href, text);
+                $$ = wrap(body, strdup(""), "}");
+            } else {
+                $$ = text;
+            }
+            free($1->text);
+            free($1->url);
+            free($1->title);
+            free($1);
+        }
     | strong_text   { $$ = $1; }
     | emph_text     { $$ = $1; }
     | triple_text   { $$ = $1; }
@@ -280,7 +302,7 @@ void yyerror(const char *s) {
 }
 
 int main(void) {
-    printf("\\documentclass{article}\n\\begin{document}\n");
+    printf("\\documentclass{article}\n\\usepackage{hyperref}\n\\begin{document}\n");
     int res = yyparse();
     printf("\n\\end{document}\n");
     return res;
