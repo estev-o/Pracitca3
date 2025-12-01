@@ -19,7 +19,7 @@ https://www.markdownguide.org/basic-syntax/
 6. Bold and Italic [OK]
 7. Blockquotes (+ múltiple parágrafos) [OK]
 8. Nested Blockquotes y con otros elementos [SKIP?]
-9. Listas
+9. Listas [OK]
 10. Código (línea+bloques)
 11. Líneas Horizontales
 12. Links

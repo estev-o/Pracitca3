@@ -26,13 +26,53 @@ static char *clean_bq(const char *s) {
     while (*s == ' ' || *s == '\t') s++;
     return dup_trim(s);
 }
+
+static int count_depth(const char *s) {
+    int spaces = 0;
+    for (; *s; s++) {
+        if (*s == ' ') spaces++;
+        else if (*s == '\t') spaces += 4;
+        else break;
+    }
+    return spaces / 4;
+}
+
+static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
+    list_item_t *item = malloc(sizeof(list_item_t));
+    if (!item) return NULL;
+    item->depth = depth;
+    item->ordered = ordered;
+    item->text = dup_trim(text);
+    return item;
+}
 %}
 
 %option noinput nounput noyywrap yylineno
-%x BQ
+%x BQ LIST
 
 %%
 <INITIAL>{
+^[ \t]*[-+*][ \t]+[^\n]*\r?\n? {
+    int depth = count_depth(yytext);
+    const char *p = yytext;
+    while (*p == ' ' || *p == '\t') p++;
+    p++; /* skip marker */
+    while (*p == ' ' || *p == '\t') p++;
+    yylval.list = mk_list_item(p, depth, 0);
+    BEGIN(LIST);
+    return UL_ITEM;
+}
+^[ \t]*[0-9]+[.][ \t]+[^\n]*\r?\n? {
+    int depth = count_depth(yytext);
+    const char *p = yytext;
+    while (*p == ' ' || *p == '\t') p++;
+    while (*p && *p != '.') p++;
+    if (*p == '.') p++;
+    while (*p == ' ' || *p == '\t') p++;
+    yylval.list = mk_list_item(p, depth, 1);
+    BEGIN(LIST);
+    return OL_ITEM;
+}
 ^[ \t]*>[ \t]*\r?\n          { BEGIN(BQ); return BQBLANK; }
 ^[ \t]*>[ \t]*[^\n]*\r?\n?   { BEGIN(BQ); yylval.str = clean_bq(yytext); return BQLINE; }
 ^[ \t]*#{1}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD1; }
@@ -55,6 +95,43 @@ static char *clean_bq(const char *s) {
     if (YY_START == BQ) {
         BEGIN(INITIAL);
         return BQEND;
+    }
+}
+}
+
+<LIST>{
+^[ \t]*[-+*][ \t]+[^\n]*\r?\n? {
+    int depth = count_depth(yytext);
+    const char *p = yytext;
+    while (*p == ' ' || *p == '\t') p++;
+    p++;
+    while (*p == ' ' || *p == '\t') p++;
+    yylval.list = mk_list_item(p, depth, 0);
+    return UL_ITEM;
+}
+^[ \t]*[0-9]+[.][ \t]+[^\n]*\r?\n? {
+    int depth = count_depth(yytext);
+    const char *p = yytext;
+    while (*p == ' ' || *p == '\t') p++;
+    while (*p && *p != '.') p++;
+    if (*p == '.') p++;
+    while (*p == ' ' || *p == '\t') p++;
+    yylval.list = mk_list_item(p, depth, 1);
+    return OL_ITEM;
+}
+^[ \t]*\r?\n {
+    BEGIN(INITIAL);
+    return LIST_END;
+}
+^[^\n]* {
+    BEGIN(INITIAL);
+    yyless(0);
+    return LIST_END;
+}
+<<EOF>> {
+    if (YY_START == LIST) {
+        BEGIN(INITIAL);
+        return LIST_END;
     }
 }
 }

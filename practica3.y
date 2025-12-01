@@ -1,10 +1,32 @@
+%code requires {
+#ifndef LIST_ITEM_T_DEFINED
+#define LIST_ITEM_T_DEFINED
+typedef struct list_item {
+    int depth;
+    int ordered;
+    char *text;
+} list_item_t;
+#endif
+}
+
 %{
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "practica3.tab.h"
+
+static int list_stack[32];
+static int list_depth = 0;
+typedef struct list_item {
+    int depth;
+    int ordered;
+    char *text;
+} list_item_t;
 
 int yylex(void);
 void yyerror(const char *s);
+static void handle_list_item(list_item_t *item);
+static void close_all_lists(void);
 
 char* join(char* s1, char* s2) {
     if (!s1) return s2 ? s2 : strdup("");
@@ -32,6 +54,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 
 %union {
     char *str;
+    list_item_t *list;
 }
 
 %token <str> HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
@@ -39,11 +62,14 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token <str> BQLINE
 %token STRONG EMPH TRIPLE HARD_BREAK NEWLINE
 %token UNDER1 UNDER2
+%token LIST_END
+%token <list> UL_ITEM OL_ITEM
 %token BQBLANK BQEND
 
 %type <str> inline_content inline_element strong_text emph_text triple_text
 %type <str> strong_content strong_content_element emph_content emph_content_element triple_content triple_content_element
 %type <str> bq_content bq_piece bq_line bq_blank
+%type <str> list_block list_items list_item
 
 %start document
 
@@ -60,6 +86,7 @@ elements
 element
     : heading
     | paragraph
+    | list_block
     | blockquote
     | blank
     ;
@@ -107,6 +134,25 @@ bq_line
 
 bq_blank
     : BQBLANK { $$ = strdup("\n"); }
+    ;
+
+list_block
+    : { list_depth = 0; } list_items opt_list_end { close_all_lists(); printf("\n"); }
+    ;
+
+opt_list_end
+    : LIST_END
+    | 
+    ;
+
+list_items
+    : list_item        { $$ = $1; }
+    | list_items list_item { $$ = $1; }
+    ;
+
+list_item
+    : UL_ITEM { handle_list_item($1); $$ = NULL; }
+    | OL_ITEM { handle_list_item($1); $$ = NULL; }
     ;
 
 inline_content
@@ -174,6 +220,39 @@ blank
     : NEWLINE { printf("\n"); }
     ;
 %%
+
+static void handle_list_item(list_item_t *item) {
+    if (!item) return;
+    int desired = item->depth + 1;
+    if (desired < 1) desired = 1;
+    if (desired > 32) desired = 32;
+    while (list_depth > desired) {
+        list_depth--;
+        if (list_stack[list_depth]) printf("\\end{enumerate}\n");
+        else printf("\\end{itemize}\n");
+    }
+    if (list_depth == desired && list_depth > 0 && list_stack[list_depth - 1] != item->ordered) {
+        list_depth--;
+        if (list_stack[list_depth]) printf("\\end{enumerate}\n");
+        else printf("\\end{itemize}\n");
+    }
+    while (list_depth < desired) {
+        if (item->ordered) printf("\\begin{enumerate}\n");
+        else printf("\\begin{itemize}\n");
+        list_stack[list_depth++] = item->ordered;
+    }
+    printf("\\item %s\n", item->text ? item->text : "");
+    free(item->text);
+    free(item);
+}
+
+static void close_all_lists(void) {
+    while (list_depth > 0) {
+        list_depth--;
+        if (list_stack[list_depth]) printf("\\end{enumerate}\n");
+        else printf("\\end{itemize}\n");
+    }
+}
 
 extern int yylineno;
 void yyerror(const char *s) {
