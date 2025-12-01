@@ -4,9 +4,5 @@
 #### Heading 4
 ##### Heading 5
 ###### Heading 6
-
-Alt Heading 1
-=============
-
-Alt Heading 2
--------------
+####### Not a heading (7 hashes)
+#Not a heading (no space)

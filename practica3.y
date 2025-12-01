@@ -6,6 +6,7 @@
 int yylex(void);
 void yyerror(const char *s);
 
+/* Helper functions for string manipulation */
 char* join(char* s1, char* s2) {
     if (!s1) return s2 ? s2 : strdup("");
     if (!s2) return s1;
@@ -28,151 +29,200 @@ char* wrap(char* prefix, char* s, char* suffix) {
     free(s);
     return res;
 }
+
+/* Helper to generate heading tags based on level */
+char* make_heading(int level, char* content) {
+    char* prefix;
+    switch(level) {
+        case 1: prefix = "\\section{"; break;
+        case 2: prefix = "\\subsection{"; break;
+        case 3: prefix = "\\subsubsection{"; break;
+        case 4: prefix = "\\paragraph{"; break;
+        case 5: prefix = "\\subparagraph{"; break;
+        default: prefix = "\\textbf{"; break; 
+    }
+    return wrap(prefix, content, level > 5 ? "}\n\n" : "}\n\n");
+}
 %}
 
 %union {
     char *str;
+    int num;
 }
 
-%token <str> HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
 %token <str> WORD SPACE
-%token <str> BQLINE
-%token STRONG EMPH TRIPLE HARD_BREAK NEWLINE
-%token UNDER1 UNDER2
-%token BQBLANK BQEND
+%token HASH GT STRONG EMPH TRIPLE HARD_BREAK NEWLINE
 
-%type <str> inline_content inline_element strong_text emph_text triple_text
-%type <str> strong_content strong_content_element emph_content emph_content_element triple_content triple_content_element
-%type <str> bq_content bq_piece bq_line bq_blank
+/* Precedence to resolve ambiguity in inline formatting */
+%nonassoc STRONG EMPH TRIPLE
 
-%start document
+%type <str> doc blocks block
+%type <str> heading paragraph blockquote blank
+%type <str> inline atom strong emph triple
+%type <str> inline_opt non_special_start non_space_inline
+%type <str> strong_content strong_atom
+%type <str> emph_content emph_atom
+%type <str> triple_content triple_atom
+%type <num> hashes
+
+%start doc
 
 %%
-document
-    : elements
+
+doc
+    : blocks { printf("%s", $1); free($1); }
     ;
 
-elements
-    : /* empty */
-    | elements element
+blocks
+    : block          { $$ = $1; }
+    | blocks block   { $$ = join($1, $2); }
     ;
 
-element
-    : heading
-    | paragraph
-    | blockquote
-    | blank
+block
+    : heading        { $$ = $1; }
+    | paragraph      { $$ = $1; }
+    | blockquote     { $$ = $1; }
+    | blank          { $$ = $1; }
+    | SPACE block    { $$ = $2; free($1); }
     ;
 
 heading
-    : HEAD1        { printf("\\section{%s}\n\n", $1); free($1); }
-    | HEAD2        { printf("\\subsection{%s}\n\n", $1); free($1); }
-    | HEAD3        { printf("\\subsubsection{%s}\n\n", $1); free($1); }
-    | HEAD4        { printf("\\paragraph{%s}\n\n", $1); free($1); }
-    | HEAD5        { printf("\\subparagraph{%s}\n\n", $1); free($1); }
-    | HEAD6        { printf("\\textbf{%s}\n\n", $1); free($1); }
-    | inline_content NEWLINE UNDER1 { printf("\\section{%s}\n\n", $1); free($1); }
-    | inline_content HARD_BREAK UNDER1 { printf("\\section{%s}\n\n", $1); free($1); }
-    | inline_content NEWLINE UNDER2 { printf("\\subsection{%s}\n\n", $1); free($1); }
-    | inline_content HARD_BREAK UNDER2 { printf("\\subsection{%s}\n\n", $1); free($1); }
+    : hashes SPACE inline NEWLINE { $$ = make_heading($1, $3); free($2); }
     ;
 
-paragraph
-    : inline_content NEWLINE { printf("%s\n", $1); free($1); }
-    | inline_content HARD_BREAK { printf("%s \\\\\n", $1); free($1); }
+hashes
+    : HASH          { $$ = 1; }
+    | hashes HASH   { $$ = $1 + 1; }
     ;
 
 blockquote
-    : bq_content opt_bq_end { printf("\\begin{quote}\n%s\\end{quote}\n\n", $1); free($1); }
+    : GT block          { $$ = wrap("\\begin{quote}\n", $2, "\\end{quote}\n\n"); }
     ;
 
-opt_bq_end
-    : BQEND
-    | /* empty */
-    ;
-
-bq_content
-    : bq_piece                 { $$ = $1; }
-    | bq_content bq_piece      { $$ = join($1, $2); }
-    ;
-
-bq_piece
-    : bq_line
-    | bq_blank
-    ;
-
-bq_line
-    : BQLINE { $$ = wrap("", $1, "\n"); }
-    ;
-
-bq_blank
-    : BQBLANK { $$ = strdup("\n"); }
-    ;
-
-inline_content
-    : inline_element                 { $$ = $1; }
-    | inline_content inline_element  { $$ = join($1, $2); }
-    ;
-
-inline_element
-    : WORD          { $$ = $1; }
-    | SPACE         { $$ = $1; }
-    | strong_text   { $$ = $1; }
-    | emph_text     { $$ = $1; }
-    | triple_text   { $$ = $1; }
-    ;
-
-strong_text
-    : STRONG strong_content STRONG { $$ = wrap("\\textbf{", $2, "}"); }
-    ;
-
-strong_content
-    : strong_content_element                 { $$ = $1; }
-    | strong_content strong_content_element  { $$ = join($1, $2); }
-    ;
-
-strong_content_element
-    : WORD          { $$ = $1; }
-    | SPACE         { $$ = $1; }
-    | emph_text     { $$ = $1; }
-    | triple_text   { $$ = $1; }
-    ;
-
-emph_text
-    : EMPH emph_content EMPH { $$ = wrap("\\textit{", $2, "}"); }
-    ;
-
-emph_content
-    : emph_content_element                 { $$ = $1; }
-    | emph_content emph_content_element  { $$ = join($1, $2); }
-    ;
-
-emph_content_element
-    : WORD          { $$ = $1; }
-    | SPACE         { $$ = $1; }
-    | strong_text   { $$ = $1; }
-    | triple_text   { $$ = $1; }
-    ;
-
-triple_text
-    : TRIPLE triple_content TRIPLE { $$ = wrap("\\textbf{\\textit{", $2, "}}"); }
-    ;
-
-triple_content
-    : triple_content_element                 { $$ = $1; }
-    | triple_content triple_content_element  { $$ = join($1, $2); }
-    ;
-
-triple_content_element
-    : WORD          { $$ = $1; }
-    | SPACE         { $$ = $1; }
-    | strong_text   { $$ = $1; }
-    | emph_text     { $$ = $1; }
+paragraph
+    : non_special_start inline_opt NEWLINE  { $$ = join($1, join($2, strdup("\n"))); }
+    | non_special_start inline_opt HARD_BREAK { $$ = join($1, join($2, strdup(" \\\\\n"))); }
+    | hashes non_space_inline inline_opt NEWLINE { 
+        /* Paragraph starting with hashes but not a heading (e.g. #foo or # without space) */
+        char* h_str = malloc($1 + 1);
+        memset(h_str, '#', $1);
+        h_str[$1] = '\0';
+        $$ = join(h_str, join($2, join($3, strdup("\n"))));
+    }
+    | hashes non_space_inline inline_opt HARD_BREAK { 
+        char* h_str = malloc($1 + 1);
+        memset(h_str, '#', $1);
+        h_str[$1] = '\0';
+        $$ = join(h_str, join($2, join($3, strdup(" \\\\\n"))));
+    }
+    | hashes NEWLINE {
+        /* Paragraph consisting only of hashes */
+        char* h_str = malloc($1 + 1);
+        memset(h_str, '#', $1);
+        h_str[$1] = '\0';
+        $$ = join(h_str, strdup("\n"));
+    }
+    | hashes HARD_BREAK {
+        char* h_str = malloc($1 + 1);
+        memset(h_str, '#', $1);
+        h_str[$1] = '\0';
+        $$ = join(h_str, strdup(" \\\\\n"));
+    }
     ;
 
 blank
-    : NEWLINE { printf("\n"); }
+    : NEWLINE { $$ = strdup("\n"); }
     ;
+
+inline_opt
+    : /* empty */   { $$ = strdup(""); }
+    | inline        { $$ = $1; }
+    ;
+
+inline
+    : atom          { $$ = $1; }
+    | inline atom   { $$ = join($1, $2); }
+    ;
+
+atom
+    : WORD          { $$ = $1; }
+    | SPACE         { $$ = $1; }
+    | HASH          { $$ = strdup("#"); }
+    | GT            { $$ = strdup(">"); }
+    | strong        { $$ = $1; }
+    | emph          { $$ = $1; }
+    | triple        { $$ = $1; }
+    ;
+
+non_special_start
+    : WORD          { $$ = $1; }
+    | strong        { $$ = $1; }
+    | emph          { $$ = $1; }
+    | triple        { $$ = $1; }
+    ;
+
+non_space_inline
+    : WORD          { $$ = $1; }
+    | GT            { $$ = strdup(">"); }
+    | strong        { $$ = $1; }
+    | emph          { $$ = $1; }
+    | triple        { $$ = $1; }
+    ;
+
+strong_content
+    : strong_atom                   { $$ = $1; }
+    | strong_content strong_atom    { $$ = join($1, $2); }
+    ;
+
+strong_atom
+    : WORD          { $$ = $1; }
+    | SPACE         { $$ = $1; }
+    | HASH          { $$ = strdup("#"); }
+    | GT            { $$ = strdup(">"); }
+    | emph          { $$ = $1; }
+    | triple        { $$ = $1; }
+    ;
+
+emph_content
+    : emph_atom                 { $$ = $1; }
+    | emph_content emph_atom    { $$ = join($1, $2); }
+    ;
+
+emph_atom
+    : WORD          { $$ = $1; }
+    | SPACE         { $$ = $1; }
+    | HASH          { $$ = strdup("#"); }
+    | GT            { $$ = strdup(">"); }
+    | strong        { $$ = $1; }
+    | triple        { $$ = $1; }
+    ;
+
+triple_content
+    : triple_atom                   { $$ = $1; }
+    | triple_content triple_atom    { $$ = join($1, $2); }
+    ;
+
+triple_atom
+    : WORD          { $$ = $1; }
+    | SPACE         { $$ = $1; }
+    | HASH          { $$ = strdup("#"); }
+    | GT            { $$ = strdup(">"); }
+    | strong        { $$ = $1; }
+    | emph          { $$ = $1; }
+    ;
+
+strong
+    : STRONG strong_content STRONG { $$ = wrap("\\textbf{", $2, "}"); }
+    ;
+
+emph
+    : EMPH emph_content EMPH     { $$ = wrap("\\textit{", $2, "}"); }
+    ;
+
+triple
+    : TRIPLE triple_content TRIPLE { $$ = wrap("\\textbf{\\textit{", $2, "}}"); }
+    ;
+
 %%
 
 extern int yylineno;
