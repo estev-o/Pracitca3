@@ -7,8 +7,8 @@
 - First item
 - Second item
 - Third item
-    - Nested A
-    - Nested B
+    + Nested A
+    + Nested B
 - Fourth item
 
 1. First ordered

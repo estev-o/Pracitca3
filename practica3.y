@@ -17,11 +17,6 @@ typedef struct list_item {
 
 static int list_stack[32];
 static int list_depth = 0;
-typedef struct list_item {
-    int depth;
-    int ordered;
-    char *text;
-} list_item_t;
 
 int yylex(void);
 void yyerror(const char *s);
