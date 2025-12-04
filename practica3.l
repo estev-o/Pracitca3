@@ -229,6 +229,41 @@ _ { return EMPH; }
         return LINK;
     }
 }
+[!]\[[^]]*\]\([^) \t\n\r]+[^)\n\r]*\) {
+    const char *p = yytext + 2;
+    const char *end_text = strchr(p, ']');
+    const char *url_start = strchr(end_text ? end_text : p, '(');
+    if (end_text && url_start) {
+        size_t text_len = end_text - p;
+        char *alt = strndup(p, text_len);
+        url_start++;
+        while (*url_start == ' ' || *url_start == '\t') url_start++;
+        const char *url_end = strchr(url_start, ')');
+        char *inner = NULL;
+        if (url_end && url_end > url_start) inner = strndup(url_start, url_end - url_start);
+        char *url = NULL;
+        char *title = NULL;
+        if (inner) {
+            char *space = strchr(inner, ' ');
+            if (space) {
+                *space = '\0';
+                char *tstart = strchr(space + 1, '"');
+                if (tstart) {
+                    tstart++;
+                    char *tend = strchr(tstart, '"');
+                    if (tend) title = strndup(tstart, tend - tstart);
+                }
+            }
+            url = strdup(inner);
+        }
+        yylval.link = mk_link(alt, url, title);
+        free(alt);
+        free(url);
+        free(title);
+        free(inner);
+        return IMAGE;
+    }
+}
 [<]https?:[^>\n\r]+[>] {
     size_t len = yyleng;
     char *url = strndup(yytext + 1, len - 2);

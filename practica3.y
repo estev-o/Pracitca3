@@ -72,6 +72,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token BQBLANK BQEND
 %token HR
 %token <link> LINK
+%token <link> IMAGE
 
 %type <str> inline_content inline_element strong_text emph_text triple_text
 %type <str> strong_content strong_content_element emph_content emph_content_element triple_content triple_content_element
@@ -205,6 +206,15 @@ inline_element
             free($1->title);
             free($1);
         }
+    | IMAGE         {
+            char *url = $1->url ? strdup($1->url) : strdup("");
+            char *cmd = wrap("\\includegraphics{", url, "}");
+            $$ = cmd;
+            free($1->text);
+            free($1->url);
+            free($1->title);
+            free($1);
+        }
     | strong_text   { $$ = $1; }
     | emph_text     { $$ = $1; }
     | triple_text   { $$ = $1; }
@@ -302,7 +312,7 @@ void yyerror(const char *s) {
 }
 
 int main(void) {
-    printf("\\documentclass{article}\n\\usepackage{hyperref}\n\\begin{document}\n");
+    printf("\\documentclass{article}\n\\usepackage{hyperref}\n\\usepackage{graphicx}\n\\begin{document}\n");
     int res = yyparse();
     printf("\n\\end{document}\n");
     return res;

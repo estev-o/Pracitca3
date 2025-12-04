@@ -23,7 +23,7 @@ https://www.markdownguide.org/basic-syntax/
 10. Código línea y bloques [OK]
 11. Líneas Horizontales [OK]
 12. Links [OK]
-13. Imágenes
+13. Imágenes [OK]
 
 ## Extended syntax
 https://www.markdownguide.org/extended-syntax/
