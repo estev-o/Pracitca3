@@ -268,7 +268,7 @@ triple_content_element
     ;
 
 blank
-    : BLANK { printf("\n"); }
+    : BLANK { }
     ;
 %%
 
