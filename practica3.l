@@ -47,6 +47,7 @@ static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
 }
 
 static int fence_char = 0;
+static int eof_sent = 0;
 
 static link_t *mk_link(const char *text, const char *url, const char *title) {
     link_t *l = malloc(sizeof(link_t));
@@ -192,7 +193,8 @@ _ { return EMPH; }
 }
 
 [ ]{2}\r?\n { return HARD_BREAK; }
-\r?\n       { return NEWLINE; }
+^[ \t]*\r?\n { return BLANK; }
+\r?\n       { yylval.str = strdup(" "); return SPACE; }
 [ \t]+      { yylval.str = strdup(yytext); return SPACE; }
 \[[^]]+\]\([^) \t\n\r]+[^)\n\r]*\) {
     const char *p = yytext + 1;
@@ -277,6 +279,13 @@ _ { return EMPH; }
     yylval.link = mk_link(url, url, NULL);
     free(url);
     return LINK;
+}
+<<EOF>> {
+    if (!eof_sent) {
+        eof_sent = 1;
+        return BLANK;
+    }
+    return 0;
 }
 [^*_\n\r \t]+ { yylval.str = strdup(yytext); return WORD; }
 %%

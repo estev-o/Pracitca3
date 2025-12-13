@@ -51,6 +51,14 @@ char* wrap(char* prefix, char* s, char* suffix) {
     free(s);
     return res;
 }
+
+static void rtrim(char *s) {
+    if (!s) return;
+    size_t len = strlen(s);
+    while (len > 0 && (s[len - 1] == ' ' || s[len - 1] == '\t' || s[len - 1] == '\n' || s[len - 1] == '\r')) {
+        s[--len] = '\0';
+    }
+}
 %}
 
 %union {
@@ -62,15 +70,16 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %token <str> HEAD1 HEAD2 HEAD3 HEAD4 HEAD5 HEAD6
 %token <str> WORD SPACE
 %token <str> BQLINE
-%token STRONG EMPH TRIPLE HARD_BREAK NEWLINE
+%token STRONG EMPH TRIPLE HARD_BREAK
 %token <str> CODE
 %token <str> CODE_TEXT
-%token UNDER1 UNDER2
 %token LIST_END
 %token CODE_FENCE_START CODE_FENCE_END
 %token <list> UL_ITEM OL_ITEM
 %token BQBLANK BQEND
 %token HR
+%token UNDER1 UNDER2
+%token BLANK
 %token <link> LINK
 %token <link> IMAGE
 
@@ -79,8 +88,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %type <str> bq_content bq_piece bq_line bq_blank
 %type <str> list_block list_items list_item code_block code_lines
 
-%nonassoc NEWLINE HARD_BREAK
-%nonassoc UNDER1 UNDER2
+%nonassoc HARD_BREAK
 
 %start document
 
@@ -111,15 +119,12 @@ heading
     | HEAD4        { printf("\\paragraph{%s}\n\n", $1); free($1); }
     | HEAD5        { printf("\\subparagraph{%s}\n\n", $1); free($1); }
     | HEAD6        { printf("\\textbf{%s}\n\n", $1); free($1); }
-    | inline_content NEWLINE UNDER1 { printf("\\section{%s}\n\n", $1); free($1); }
-    | inline_content HARD_BREAK UNDER1 { printf("\\section{%s}\n\n", $1); free($1); }
-    | inline_content NEWLINE UNDER2 { printf("\\subsection{%s}\n\n", $1); free($1); }
-    | inline_content HARD_BREAK UNDER2 { printf("\\subsection{%s}\n\n", $1); free($1); }
+    | inline_content UNDER1 { rtrim($1); printf("\\section{%s}\n\n", $1); free($1); }
+    | inline_content UNDER2 { rtrim($1); printf("\\subsection{%s}\n\n", $1); free($1); }
     ;
 
 paragraph
-    : inline_content NEWLINE { printf("%s\n", $1); free($1); }
-    | inline_content HARD_BREAK { printf("%s \\\\\n", $1); free($1); }
+    : inline_content BLANK { rtrim($1); printf("%s\n\\newline\n\n", $1); free($1); }
     ;
 
 blockquote
@@ -184,6 +189,7 @@ inline_content
 inline_element
     : WORD          { $$ = $1; }
     | SPACE         { $$ = $1; }
+    | HARD_BREAK    { $$ = strdup(" \\\\\n"); }
     | CODE          { $$ = wrap("\\texttt{", $1, "}"); }
     | LINK          {
             char *text = $1->text ? strdup($1->text) : ($1->url ? strdup($1->url) : strdup(""));
@@ -262,7 +268,7 @@ triple_content_element
     ;
 
 blank
-    : NEWLINE { printf("\n"); }
+    : BLANK { printf("\n"); }
     ;
 %%
 
