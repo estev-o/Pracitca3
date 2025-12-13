@@ -12,7 +12,7 @@ all: compile run
 compile:
 	flex $(FUENTE).l
 	bison -o $(FUENTE).tab.c $(FUENTE).y -yd
-	gcc -o $(FUENTE) lex.yy.c $(FUENTE).tab.c -$(LIB) -ly
+	gcc -o $(FUENTE) lex.yy.c $(FUENTE).tab.c -$(LIB)
 
 run: compile $(PRUEBA)
 	./$(FUENTE) < $(PRUEBA) > $(TEX_OUT)

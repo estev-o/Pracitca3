@@ -79,6 +79,9 @@ char* wrap(char* prefix, char* s, char* suffix) {
 %type <str> bq_content bq_piece bq_line bq_blank
 %type <str> list_block list_items list_item code_block code_lines
 
+%nonassoc NEWLINE HARD_BREAK
+%nonassoc UNDER1 UNDER2
+
 %start document
 
 %%
@@ -120,12 +123,7 @@ paragraph
     ;
 
 blockquote
-    : bq_content opt_bq_end { printf("\\begin{quote}\n%s\\end{quote}\n\n", $1); free($1); }
-    ;
-
-opt_bq_end
-    : BQEND
-    | /* empty */
+    : bq_content BQEND { printf("\\begin{quote}\n%s\\end{quote}\n\n", $1); free($1); }
     ;
 
 bq_content
@@ -147,12 +145,7 @@ bq_blank
     ;
 
 list_block
-    : { list_depth = 0; } list_items opt_list_end { close_all_lists(); printf("\n"); }
-    ;
-
-opt_list_end
-    : LIST_END
-    | 
+    : { list_depth = 0; } list_items LIST_END { close_all_lists(); printf("\n"); }
     ;
 
 list_items
