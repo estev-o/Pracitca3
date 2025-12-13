@@ -1,5 +1,5 @@
 FUENTE = practica3
-PRUEBA = tests/basic.md
+PRUEBA = tests/test_code.md
 TEX_OUT = $(PRUEBA:.md=.tex)
 PDF_OUT = $(PRUEBA:.md=.pdf)
 LIB = lfl
@@ -11,7 +11,7 @@ all: compile run
 
 compile:
 	flex $(FUENTE).l
-	bison -o $(FUENTE).tab.c $(FUENTE).y -yd
+	bison -o $(FUENTE).tab.c $(FUENTE).y -d
 	gcc -o $(FUENTE) lex.yy.c $(FUENTE).tab.c -$(LIB)
 
 run: compile $(PRUEBA)
