@@ -1,1 +1,1 @@
-Image test: ![Alt text](./Tux.svg "Example image")
+Image test: ![Alt text](./Tux.png "Example image")

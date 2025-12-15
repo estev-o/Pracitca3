@@ -108,7 +108,7 @@ element
     | list_block
     | blockquote
     | code_block
-    | horizontal_rule
+    | horizontal_line
     | blank
     ;
 
@@ -175,7 +175,7 @@ code_lines
     | code_lines CODE_TEXT    { $$ = join($1, $2); }
     ;
 
-horizontal_rule
+horizontal_line
     : HR               { printf("\\noindent\\rule{\\linewidth}{0.4pt}\n\n"); }
     | UNDER1           { printf("\\noindent\\rule{\\linewidth}{0.4pt}\n\n"); }
     | UNDER2           { printf("\\noindent\\rule{\\linewidth}{0.4pt}\n\n"); }
@@ -207,7 +207,7 @@ inline_element
         }
     | IMAGE         {
             char *url = $1->url ? strdup($1->url) : strdup("");
-            char *cmd = wrap("\\includegraphics{", url, "}");
+            char *cmd = wrap("\\includegraphics[width=\\textwidth]{", url, "}");
             $$ = cmd;
             free($1->text);
             free($1->url);
