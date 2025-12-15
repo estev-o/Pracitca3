@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "practica3.tab.h"
 
+// Copiamos una cadena y le quitamos espacios en blanco al final
 static char *dup_trim(const char *s) {
     char *copy = strdup(s);
     if (!copy) return NULL;
@@ -13,6 +14,7 @@ static char *dup_trim(const char *s) {
     return copy;
 }
 
+// Copiamos una cadena limpiando el encabezado
 static char *clean_heading(const char *s) {
     while (*s == ' ' || *s == '\t') s++;
     while (*s == '#') s++;
@@ -20,6 +22,7 @@ static char *clean_heading(const char *s) {
     return dup_trim(s);
 }
 
+// Copiamos una cadena limpiando el bloque de cita
 static char *clean_bq(const char *s) {
     while (*s == ' ' || *s == '\t') s++;
     if (*s == '>') s++;
@@ -27,6 +30,7 @@ static char *clean_bq(const char *s) {
     return dup_trim(s);
 }
 
+// Calculamos profundidad de anidamiento de listas
 static int count_depth(const char *s) {
     int spaces = 0;
     for (; *s; s++) {
@@ -37,6 +41,7 @@ static int count_depth(const char *s) {
     return spaces / 4;
 }
 
+// Estructura de lista en la que guardamos profundidad, tipo y texto
 static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
     list_item_t *item = malloc(sizeof(list_item_t));
     if (!item) return NULL;
@@ -46,9 +51,10 @@ static list_item_t *mk_list_item(const char *text, int depth, int ordered) {
     return item;
 }
 
-static int fence_char = 0;
-static int eof_sent = 0;
+static int fence_char = 0; //Qué simbolo cierra el code fence
+static int eof_sent = 0; // Evita bucles infinitos al final del archivo
 
+//Estructura para links e imágenes con text, URL y título
 static link_t *mk_link(const char *text, const char *url, const char *title) {
     link_t *l = malloc(sizeof(link_t));
     if (!l) return NULL;
@@ -64,10 +70,10 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
 
 %%
 <INITIAL>{
-^[ \t]*\*{3,}[ \t]*\r?\n? { return HR; }
+^[ \t]*\*{3,}[ \t]*\r?\n? { return HR; } /* Lineas horizontales */
 ^[ \t]*_{3,}[ \t]*\r?\n? { return HR; }
 
-^```[^\n]*\r?\n?  { fence_char = '`'; BEGIN(CFENCE); return CODE_FENCE_START; }
+^```[^\n]*\r?\n?  { fence_char = '`'; BEGIN(CFENCE); return CODE_FENCE_START; } /* Código */
 ^~~~[^\n]*\r?\n?  { fence_char = '~'; BEGIN(CFENCE); return CODE_FENCE_START; }
 
 ^[ \t]*[-+*][ \t]+[^\n]*\r?\n? {
@@ -79,7 +85,7 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
     yylval.list = mk_list_item(p, depth, 0);
     BEGIN(LIST);
     return UL_ITEM;
-}
+} /* Lista no ordenada */
 ^[ \t]*[0-9]+[.][ \t]+[^\n]*\r?\n? {
     int depth = count_depth(yytext);
     const char *p = yytext;
@@ -90,9 +96,11 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
     yylval.list = mk_list_item(p, depth, 1);
     BEGIN(LIST);
     return OL_ITEM;
-}
-^[ \t]*>[ \t]*\r?\n          { BEGIN(BQ); return BQBLANK; }
+} /* Lista ordenada */
+
+^[ \t]*>[ \t]*\r?\n          { BEGIN(BQ); return BQBLANK; } /* Cita */
 ^[ \t]*>[ \t]*[^\n]*\r?\n?   { BEGIN(BQ); yylval.str = clean_bq(yytext); return BQLINE; }
+
 ^[ \t]*#{1}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD1; }
 ^[ \t]*#{2}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD2; }
 ^[ \t]*#{3}[ \t]+[^\n]*\r?\n? { yylval.str = clean_heading(yytext); return HEAD3; }
@@ -172,7 +180,7 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
 ^[ \t]*=+[ \t]*\r?\n    { return UNDER1; }
 ^[ \t]*-+[ \t]*\r?\n    { return UNDER2; }
 
-\*\*\* { return TRIPLE; }
+\*\*\* { return TRIPLE; } /* Negrita y cursiva */
 ___ { return TRIPLE; }
 \*\* { return STRONG; }
 __ { return STRONG; }
@@ -196,7 +204,7 @@ _ { return EMPH; }
 ^[ \t]*\r?\n { return BLANK; }
 \r?\n       { yylval.str = strdup(" "); return SPACE; }
 [ \t]+      { yylval.str = strdup(yytext); return SPACE; }
-\[[^]]+\]\([^) \t\n\r]+[^)\n\r]*\) {
+\[[^]]+\]\([^) \t\n\r]+[^)\n\r]*\) { /* Link */
     const char *p = yytext + 1;
     const char *end_text = strchr(p, ']');
     const char *url_start = strchr(end_text ? end_text : p, '(');
@@ -231,7 +239,7 @@ _ { return EMPH; }
         return LINK;
     }
 }
-[!]\[[^]]*\]\([^) \t\n\r]+[^)\n\r]*\) {
+[!]\[[^]]*\]\([^) \t\n\r]+[^)\n\r]*\) { /* Imagen */
     const char *p = yytext + 2;
     const char *end_text = strchr(p, ']');
     const char *url_start = strchr(end_text ? end_text : p, '(');

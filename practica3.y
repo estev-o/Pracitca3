@@ -29,7 +29,7 @@ void yyerror(const char *s);
 static void handle_list_item(list_item_t *item);
 static void close_all_lists(void);
 
-char* join(char* s1, char* s2) {
+char* join(char* s1, char* s2) { // lo usamos para concatenar cadenas
     if (!s1) return s2 ? s2 : strdup("");
     if (!s2) return s1;
     char* res = malloc(strlen(s1) + strlen(s2) + 1);
@@ -41,7 +41,7 @@ char* join(char* s1, char* s2) {
     return res;
 }
 
-char* wrap(char* prefix, char* s, char* suffix) {
+char* wrap(char* prefix, char* s, char* suffix) { // lo usamos para crear cadenas de LaTeX
     if (!s) s = strdup("");
     char* res = malloc(strlen(prefix) + strlen(s) + strlen(suffix) + 1);
     if (!res) { fprintf(stderr, "Malloc failed\n"); exit(1); }
@@ -52,7 +52,7 @@ char* wrap(char* prefix, char* s, char* suffix) {
     return res;
 }
 
-static void rtrim(char *s) {
+static void rtrim(char *s) { // elimina espacios en blanco al final de una cadena
     if (!s) return;
     size_t len = strlen(s);
     while (len > 0 && (s[len - 1] == ' ' || s[len - 1] == '\t' || s[len - 1] == '\n' || s[len - 1] == '\r')) {
