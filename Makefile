@@ -1,5 +1,5 @@
 FUENTE = practica3
-PRUEBA = tests/test_code.md
+PRUEBA = memoria.md
 TEX_OUT = $(PRUEBA:.md=.tex)
 PDF_OUT = $(PRUEBA:.md=.pdf)
 LIB = lfl
