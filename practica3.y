@@ -59,6 +59,33 @@ static void rtrim(char *s) { // elimina espacios en blanco al final de una caden
         s[--len] = '\0';
     }
 }
+
+char* escape_latex(const char* s) {
+    if (!s) return strdup("");
+    char* res = calloc(strlen(s) * 20 + 1, 1);
+    if (!res) { fprintf(stderr, "Malloc failed\n"); exit(1); }
+    for (size_t i = 0; s[i]; i++) {
+        switch (s[i]) {
+            case '_': strcat(res, "\\_"); break;
+            case '#': strcat(res, "\\#"); break;
+            case '$': strcat(res, "\\$"); break;
+            case '%': strcat(res, "\\%"); break;
+            case '&': strcat(res, "\\&"); break;
+            case '{': strcat(res, "\\{"); break;
+            case '}': strcat(res, "\\}"); break;
+            case '\\': strcat(res, "\\textbackslash{}"); break;
+            case '^': strcat(res, "\\textasciicircum{}"); break;
+            case '~': strcat(res, "\\textasciitilde{}"); break;
+            case '<': strcat(res, "\\textless{}"); break;
+            case '>': strcat(res, "\\textgreater{}"); break;
+            default: {
+                char temp[2] = {s[i], '\0'};
+                strcat(res, temp);
+            }
+        }
+    }
+    return res;
+}
 %}
 
 %union {
@@ -75,7 +102,8 @@ static void rtrim(char *s) { // elimina espacios en blanco al final de una caden
 %token <str> CODE_TEXT
 %token LIST_END
 %token CODE_FENCE_START CODE_FENCE_END
-%token <list> UL_ITEM OL_ITEM
+%token <list> UL_START OL_START
+%token LIST_ITEM_END
 %token BQBLANK BQEND
 %token HR
 %token UNDER1 UNDER2
@@ -113,12 +141,12 @@ element
     ;
 
 heading
-    : HEAD1        { printf("\\section{%s}\n\n", $1); free($1); }
-    | HEAD2        { printf("\\subsection{%s}\n\n", $1); free($1); }
-    | HEAD3        { printf("\\subsubsection{%s}\n\n", $1); free($1); }
-    | HEAD4        { printf("\\paragraph{%s}\n\n", $1); free($1); }
-    | HEAD5        { printf("\\subparagraph{%s}\n\n", $1); free($1); }
-    | HEAD6        { printf("\\textbf{%s}\n\n", $1); free($1); }
+    : HEAD1        { char *e = escape_latex($1); printf("\\section{%s}\n\n", e); free(e); free($1); }
+    | HEAD2        { char *e = escape_latex($1); printf("\\subsection{%s}\n\n", e); free(e); free($1); }
+    | HEAD3        { char *e = escape_latex($1); printf("\\subsubsection{%s}\n\n", e); free(e); free($1); }
+    | HEAD4        { char *e = escape_latex($1); printf("\\paragraph{%s}\n\n", e); free(e); free($1); }
+    | HEAD5        { char *e = escape_latex($1); printf("\\subparagraph{%s}\n\n", e); free(e); free($1); }
+    | HEAD6        { char *e = escape_latex($1); printf("\\textbf{%s}\n\n", e); free(e); free($1); }
     | inline_content UNDER1 { rtrim($1); printf("\\section{%s}\n\n", $1); free($1); }
     | inline_content UNDER2 { rtrim($1); printf("\\subsection{%s}\n\n", $1); free($1); }
     ;
@@ -142,7 +170,7 @@ bq_piece
     ;
 
 bq_line
-    : BQLINE { $$ = wrap("", $1, "\n"); }
+    : BQLINE { char *esc = escape_latex($1); $$ = wrap("", esc, "\n"); free($1); }
     ;
 
 bq_blank
@@ -159,8 +187,10 @@ list_items
     ;
 
 list_item
-    : UL_ITEM { handle_list_item($1); $$ = NULL; }
-    | OL_ITEM { handle_list_item($1); $$ = NULL; }
+    : UL_START inline_content LIST_ITEM_END { $1->text = $2; rtrim($1->text); handle_list_item($1); $$ = NULL; }
+    | UL_START LIST_ITEM_END { $1->text = strdup(""); handle_list_item($1); $$ = NULL; }
+    | OL_START inline_content LIST_ITEM_END { $1->text = $2; rtrim($1->text); handle_list_item($1); $$ = NULL; }
+    | OL_START LIST_ITEM_END { $1->text = strdup(""); handle_list_item($1); $$ = NULL; }
     ;
 
 code_block
@@ -187,16 +217,20 @@ inline_content
     ;
 
 inline_element
-    : WORD          { $$ = $1; }
+    : WORD          { $$ = escape_latex($1); free($1); }
     | SPACE         { $$ = $1; }
     | HARD_BREAK    { $$ = strdup(" \\\\\n"); }
-    | CODE          { $$ = wrap("\\texttt{", $1, "}"); }
+    | CODE          { char *e = escape_latex($1); $$ = wrap("\\texttt{", e, "}"); free($1); }
     | LINK          {
-            char *text = $1->text ? strdup($1->text) : ($1->url ? strdup($1->url) : strdup(""));
+            char *raw_text = $1->text ? strdup($1->text) : ($1->url ? strdup($1->url) : strdup(""));
+            char *text = escape_latex(raw_text);
+            free(raw_text);
+
             if ($1->url) {
                 char *href = wrap("\\href{", $1->url ? strdup($1->url) : strdup(""), "}{");
                 char *body = join(href, text);
                 $$ = wrap(body, strdup(""), "}");
+                free(body);
             } else {
                 $$ = text;
             }
@@ -311,7 +345,10 @@ void yyerror(const char *s) {
 }
 
 int main(void) {
-    printf("\\documentclass{article}\n\\usepackage{hyperref}\n\\usepackage{graphicx}\n\\begin{document}\n");
+    printf("\\documentclass{article}\n");
+    printf("\\usepackage[utf8]{inputenc}\n");
+    printf("\\usepackage[T1]{fontenc}\n");
+    printf("\\usepackage{hyperref}\n\\usepackage{graphicx}\n\\begin{document}\n");
     int res = yyparse();
     printf("\n\\end{document}\n");
     return res;

@@ -67,6 +67,7 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
 
 %option noinput nounput noyywrap yylineno
 %x BQ LIST CFENCE
+%s LIST_CONTENT
 
 %%
 <INITIAL>{
@@ -76,26 +77,17 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
 ^```[^\n]*\r?\n?  { fence_char = '`'; BEGIN(CFENCE); return CODE_FENCE_START; } /* Código */
 ^~~~[^\n]*\r?\n?  { fence_char = '~'; BEGIN(CFENCE); return CODE_FENCE_START; }
 
-^[ \t]*[-+*][ \t]+[^\n]*\r?\n? {
+^[ \t]*[-+*][ \t]+ {
     int depth = count_depth(yytext);
-    const char *p = yytext;
-    while (*p == ' ' || *p == '\t') p++;
-    p++; /* skip marker */
-    while (*p == ' ' || *p == '\t') p++;
-    yylval.list = mk_list_item(p, depth, 0);
-    BEGIN(LIST);
-    return UL_ITEM;
+    yylval.list = mk_list_item("", depth, 0);
+    BEGIN(LIST_CONTENT);
+    return UL_START;
 } /* Lista no ordenada */
-^[ \t]*[0-9]+[.][ \t]+[^\n]*\r?\n? {
+^[ \t]*[0-9]+[.][ \t]+ {
     int depth = count_depth(yytext);
-    const char *p = yytext;
-    while (*p == ' ' || *p == '\t') p++;
-    while (*p && *p != '.') p++;
-    if (*p == '.') p++;
-    while (*p == ' ' || *p == '\t') p++;
-    yylval.list = mk_list_item(p, depth, 1);
-    BEGIN(LIST);
-    return OL_ITEM;
+    yylval.list = mk_list_item("", depth, 1);
+    BEGIN(LIST_CONTENT);
+    return OL_START;
 } /* Lista ordenada */
 
 ^[ \t]*>[ \t]*\r?\n          { BEGIN(BQ); return BQBLANK; } /* Cita */
@@ -125,25 +117,42 @@ static link_t *mk_link(const char *text, const char *url, const char *title) {
 }
 }
 
+<LIST_CONTENT>{
+[ ]{2}\r?\n {
+    BEGIN(LIST);
+    return LIST_ITEM_END;
+}
+\r?\n {
+    BEGIN(LIST);
+    return LIST_ITEM_END;
+}
+}
+
 <LIST>{
-^[ \t]*[-+*][ \t]+[^\n]*\r?\n? {
+^[ \t]*[-+*][ \t]+[^\n]* {
     int depth = count_depth(yytext);
     const char *p = yytext;
     while (*p == ' ' || *p == '\t') p++;
     p++;
     while (*p == ' ' || *p == '\t') p++;
-    yylval.list = mk_list_item(p, depth, 0);
-    return UL_ITEM;
+    int prefix_len = p - yytext;
+    yylval.list = mk_list_item("", depth, 0);
+    yyless(prefix_len);
+    BEGIN(LIST_CONTENT);
+    return UL_START;
 }
-^[ \t]*[0-9]+[.][ \t]+[^\n]*\r?\n? {
+^[ \t]*[0-9]+[.][ \t]+[^\n]* {
     int depth = count_depth(yytext);
     const char *p = yytext;
     while (*p == ' ' || *p == '\t') p++;
     while (*p && *p != '.') p++;
     if (*p == '.') p++;
     while (*p == ' ' || *p == '\t') p++;
-    yylval.list = mk_list_item(p, depth, 1);
-    return OL_ITEM;
+    int prefix_len = p - yytext;
+    yylval.list = mk_list_item("", depth, 1);
+    yyless(prefix_len);
+    BEGIN(LIST_CONTENT);
+    return OL_START;
 }
 ^[ \t]*\r?\n {
     BEGIN(INITIAL);
@@ -295,5 +304,6 @@ _ { return EMPH; }
     }
     return 0;
 }
-[^*_\n\r \t]+ { yylval.str = strdup(yytext); return WORD; }
+[a-zA-Z0-9]+(_[a-zA-Z0-9]+)+ { yylval.str = strdup(yytext); return WORD; }
+[^*_\n\r \t`]+ { yylval.str = strdup(yytext); return WORD; }
 %%

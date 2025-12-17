@@ -2,7 +2,7 @@
 Autores: Estevo Aldea Arias y Javier Carballal Morgade
 
 ### ¿Qué es y para qué sirve?
-Herramienta que convierte documentos Markdown en un fichero LaTeX listo para compilar. Genera un documento latex on soporte para enlaces e imágenes, reproduciendo la estructura y el formato del Markdown original.
+Herramienta que convierte documentos Markdown en un fichero LaTeX listo para compilar. Genera un documento latex con soporte para enlaces e imágenes, reproduciendo la estructura y el formato del Markdown original.
 
 ### Funcionalidades implementadas
 - Encabezados `#` … `######` y sintaxis alternativa con líneas `===`/`---`, mapeados a secciones latex.
@@ -10,7 +10,7 @@ Herramienta que convierte documentos Markdown en un fichero LaTeX listo para com
 - Énfasis: cursiva, negrita y negrita+cursiva anidada, además de combinaciones anidadas de estas.
 - Citas con `>` soportando líneas en blanco internas y cierre automático del entorno `quote`.
 - Listas ordenadas y no ordenadas con anidamiento por indentación; apertura/cierre correcto de `itemize`/`enumerate` según el nivel.
-- Bloques de código con vallas ``` o `~~~`, convertidos a `verbatim`, y líneas horizontales (`***`, `___`, `---`).
+- Bloques de código con vallas de dos tipos, convertidos a `verbatim`, y líneas horizontales (`***`, `___`, `---`).
 - Enlaces (`[texto](url "título")`), autoenlaces `<http://...>`/`<mail@...>` e imágenes `![]()` renderizadas a ancho de texto.
 
 ### Archivos principales
